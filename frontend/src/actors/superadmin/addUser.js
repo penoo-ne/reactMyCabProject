@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 // import { link } from "react-router-dom";
 import axios from "axios";
 import { json } from "react-router-dom";
@@ -22,11 +22,13 @@ const AddUser = () => {
     const [error, setError] = useState("");
 
     // const [redirectToList, setRedirectToList] = useState(false);
-
+   
 
     const handleAddUser = async (e) => {
         e.preventDefault();
         try {
+            const token = localStorage.getItem("token");
+
             const response = await axios.post(
                 "http://127.0.0.1:8000/api/add-new-user",
 
@@ -39,12 +41,13 @@ const AddUser = () => {
                     image,
                     franchise_id,
                     is_franchise_owner: is_franchise_owner === "1" ? "franchise_owner" : "customer",
-
                 },
+               
                 {
                     headers: {
                         Accept: "application/json",
                         "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${token}`,
 
                         //'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8;application/json'
                     }
@@ -212,6 +215,10 @@ const AddUser = () => {
                                                 {" "}
                                                 CustomerAdmin
                                             </option>
+                                            <option value="23">
+                                                {" "}
+                                                Driver
+                                            </option>
                                         </select>
                                         {/* <span className="glyphicon glyphicon-lock form-control-feedback"></span> */}
                                     </div>
@@ -288,10 +295,14 @@ const AddUser = () => {
                                             type="file"
                                             className="form-control"
                                             placeholder="Image"
-
-
                                             onChange={(e) => setImage(e.target.files[0])}  // Update to handle file selection
-                                        />
+                                        />   {image && (
+                                            <img
+                                                src={URL.createObjectURL(image)}
+                                                alt="Uploaded Image"
+                                                style={{ width: '50px', height: '50px' }}
+                                            />
+                                        )}
                                     </div>
                                 </div>
 

@@ -7,11 +7,6 @@ import 'react-toastify/dist/ReactToastify.css';
 const Dashboard = ({ userRole }) => {
 
   return (
-
-
-
-
-
     <div className="content-wrapper">
 
       <section className="content-header" style={{ 'textAlign': 'left' }}>
@@ -24,7 +19,6 @@ const Dashboard = ({ userRole }) => {
           <li className="active">Dashboard</li>
         </ol>
       </section>
-
 
       <section className="content">
 

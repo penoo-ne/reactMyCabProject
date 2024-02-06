@@ -1,4 +1,4 @@
-import React, { useEffect,useState } from "react";
+import React, { useEffect, useState } from "react";
 // import { link } from "react-router-dom";
 import axios from "axios";
 import { json } from "react-router-dom";
@@ -9,9 +9,9 @@ import { useNavigate, useParams } from "react-router-dom";
 
 const UpdateUser = () => {
     const { user_id } = useParams(); // Retrieve userId from URL params
-    //  alert(userId)
-    const [userData, setUserData] = useState(null);
-     const [name, setName] = useState("");
+    const navigate = useNavigate();
+    // const [userData, setUserData] = useState(null);
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState("");
     const [role_id, setRole] = useState("");
@@ -22,7 +22,10 @@ const UpdateUser = () => {
     // const [redirectToList, setRedirectToList] = useState(false);
 
 
-    
+    // const setTokenInLocalStorage = (token) => {
+    //     localStorage.setItem("token", token);
+    // };
+
     useEffect(() => {
         // Fetch user data and populate form fields
         const fetchUser = async () => {
@@ -35,11 +38,15 @@ const UpdateUser = () => {
                 console.log("User Data:", userData);
                 setName(userData.name);
                 setEmail(userData.email);
-                setStatus(userData.status);
+                setStatus(userData.status === '1' ? 'active' : 'inactive');
+                console.log("Status:", status);
                 setRole(userData.role_id);
                 setFranchise(userData.franchise_id);
-                setIs_franchise_owner(userData.is_franchise_owner);
+                setIs_franchise_owner(userData.is_franchise_owner === '1' ? 'franchise_owner' : 'customer');
                 // Assuming image data is handled separately
+
+
+
             } catch (error) {
                 setError(
                     error.response ? error.response.data.error : error.message
@@ -49,6 +56,42 @@ const UpdateUser = () => {
 
         fetchUser();
     }, [user_id]);
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            const formData = new FormData();
+            formData.append("name", name);
+            formData.append("email", email);
+            formData.append("status", status ? "active" : "inactive");
+            // console.log("Status:", status ? "active" : "inactive");
+
+            formData.append("role_id", role_id);
+            formData.append("franchise_id", franchise_id);
+            formData.append("is_franchise_owner", is_franchise_owner ? "franchise_owner" : "customer");
+
+            formData.append("image", image);
+            console.log('image')
+            const token = localStorage.getItem("token"); // Retrieve token from localStorage
+
+            const response = await axios.post(
+                `http://127.0.0.1:8000/api/edit-new-user/${user_id}`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}` // Include token in request headers
+                    }
+                }
+            );
+
+            // Handle response
+            navigate("/userList");
+        } catch (error) {
+            setError(
+                error.response ? error.response.data.error : error.message
+            );
+        }
+    };
 
     return (
 
@@ -76,7 +119,7 @@ const UpdateUser = () => {
                                 <h3 className="box-title">Edit user</h3>
                             </div>
 
-                            <form >
+                            <form onSubmit={handleUpdate}>
                                 <div className="box-body">
                                     <div className="form-group has-feedback col-md-6 col-xm-12">
                                         <label for="exampleInputName">
@@ -112,7 +155,7 @@ const UpdateUser = () => {
                                         />
                                     </div>
 
-                                    
+
 
 
                                     <div className="form-group has-feedback col-md-6 col-xm-12">
@@ -121,22 +164,22 @@ const UpdateUser = () => {
                                         </label>
                                         <select
                                             className="form-control"
-                                             value={status}
-                                            onChange={(e) =>
-                                                setStatus(e.target.value)
-                                            }
+                                            value={status ? '1' : '0'}
+                                            onChange={(e) => setStatus(e.target.value === status)}
+                                        // setStatus(e.target.value)
+
                                         >
                                             <option value="">
                                                 {" "}
                                                 Select status
                                             </option>
-                                            <option value="1">
+                                            <option value='1'>
                                                 {" "}
-                                                Active
+                                                active
                                             </option>
-                                            <option value="0">
+                                            <option value='0'>
                                                 {" "}
-                                                Inactive
+                                                inactive
                                             </option>
                                         </select>
                                         {/* <span className="glyphicon glyphicon-lock form-control-feedback"></span> */}
@@ -152,7 +195,7 @@ const UpdateUser = () => {
                                             onChange={(e) =>
                                                 setRole(e.target.value)
                                             }
-                                           
+
                                         >
                                             <option value="">
                                                 {" "}
@@ -214,11 +257,11 @@ const UpdateUser = () => {
                                             </option>
                                             <option value="2">
                                                 {" "}
-                                                test2
+                                                test1
                                             </option>
                                             <option value="3">
                                                 {" "}
-                                                test3
+                                                test2
                                             </option>
                                         </select>
                                         {/* <span className="glyphicon glyphicon-lock form-control-feedback"></span> */}
@@ -233,7 +276,7 @@ const UpdateUser = () => {
                                             className="form-control"
                                             value={is_franchise_owner ? '1' : '0'}
                                             onChange={(e) =>
-                                                setIs_franchise_owner(e.target.value)
+                                                setIs_franchise_owner(e.target.value === is_franchise_owner)
                                             }
 
                                         >
@@ -245,7 +288,7 @@ const UpdateUser = () => {
                                                 {" "}
                                                 franchise_owner
                                             </option>
-                                            <option value="">
+                                            <option value="0">
                                                 {" "}
                                                 customer
                                             </option>
@@ -266,9 +309,8 @@ const UpdateUser = () => {
                                             type="file"
                                             className="form-control"
                                             placeholder="Image"
-
-
                                             onChange={(e) => setImage(e.target.files[0])}  // Update to handle file selection
+                                            accept=".jpg,.jpeg,.png,.gif" // Limit accepted file types to images
                                         />
                                     </div>
 

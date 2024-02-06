@@ -46,7 +46,20 @@ const Dashboard = ({ userRole }) => {
     // { Header: 'Is_Franchise_Owner', accessor: 'is_franchise_owner' },
     { Header: 'Franchise', accessor: 'franchise_name' },
     { Header: 'Status', accessor: 'status' },
-    { Header: 'Image', accessor: 'image' },
+    {
+      Header: 'Image',
+      accessor: 'image',
+      Cell: ({ row }) => (
+        row.original.image ? (
+      
+          <img
+            src={row.original.image}
+            alt="User Image"
+            style={{ width: '50px', height: '50px' }}
+          />
+        ) : null
+      ),
+    },
     {
       Header: 'Actions',
       accessor: 'ids', // Use id or another unique identifier for the accessor
@@ -118,7 +131,7 @@ const Dashboard = ({ userRole }) => {
 
   return (
     <div className="content-wrapper">
-      console.log()
+      
       <section className="content-header" style={{ 'textAlign': 'left' }}>
         <h1>
           {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
@@ -176,6 +189,7 @@ const Dashboard = ({ userRole }) => {
                         <tr {...row.getRowProps()}>
                           {row.cells.map(cell => (
                             <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                            
                           ))}
                         </tr>
                       );
