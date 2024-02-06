@@ -4,6 +4,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Notifications\EmailNotification;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use App\Models\{User,User_roles,User_permissions,Role,Permission,Role_permission};
 use App\Models\Modules\SuperAdmin\Models\Team_admin_assign_fleets;
 use App\Models\Modules\SuperAdmin\Models\Team_admin;
@@ -38,17 +39,16 @@ class UserAuthController extends Controller
              $user->is_deleted = $request->is_deleted=='delete' ? 1 : 0;
             $user->franchise_id = $request->franchise_id;
             $user->is_franchise_owner = $request->is_franchise_owner=='franchise_owner' ? 1 : 0;
-         
+            
+
+
 
             if ($request->hasFile('image'))
             {
               $image= $request->file('image');
               $filename = time().'-'.$image->getClientOriginalName();
-              $image->storeAs('images', $filename);
-              $imagePath = 'images/' . $filename;
+              $image->storeAs('public/images/', $filename);
              $user->image = $filename;
-            //   $user->image_path = $imagePath;
-              // dd($user->image);
             }
             $user->save();
 
@@ -129,11 +129,6 @@ class UserAuthController extends Controller
         $user->forceFill([
             'remember_token' => $token,
         ])->save();
-    //    $userModel = User::all();
-        // Update user's remember_token with the new token
-        // $user->update(['remember_token' => $token]);
-
-        
     
 
         return response()->json([
@@ -191,6 +186,9 @@ class UserAuthController extends Controller
     ->join('franchises', 'users.franchise_id', '=', 'franchises.franchise_id')
     // ->join('franchises', 'franchises.franchise_id', '=', ' users.franchise_id')
     ->paginate(100);
+    foreach ($users as $user) {
+        $user->image = asset('storage/images/'.$user->image); // Get the full URL of the image
+    }
 
         if($users->isNotEmpty()){
             return response()->json([
@@ -255,58 +253,75 @@ else{
 //////Update users
 public function editNewUser(Request $request, $user_id)
 {
-    // echo $id;die();
     $UserData = $request->validate([
-        'name'=>'required|string',
+        'name' => 'required|string',
         'email' => 'unique:users,email,' . $user_id . ',user_id',
-        'password'=>'required|min:6',
         'status' => 'required|in:active,inactive',
-        'role_id'=>'required|string',
-        'permission_id'=>'required|string',
-        'is_deleted' => 'nullable|in:delete,not_delete',
-        'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        'is_franchise_owner' => 'nullable|in:franchise_owner,customer',
-        'franchise_id'=>'required|string',
+        'role_id' => 'required|string',
+        'is_franchise_owner' => 'required|in:franchise_owner,customer',
+        'franchise_id' => 'required|string',
     ]);
-    //  echo '<pre>';print_r($UserData);die();
-    $UpdateUser = User::where('user_id', '=', $user_id)->update([
-        'name' => $UserData['name'],
-        'email' => $UserData['email'],
-        'password' => Hash::make($UserData['password']),    
-        'status' => $UserData['status']=='active' ? 1 : 0,
-        'role_id' => $UserData['role_id'],
-        'permission_id' => $UserData['permission_id'],
-        'is_deleted' => $UserData['is_deleted']=='delete' ? 1 : 0,
-        'is_franchise_owner' => $UserData['is_franchise_owner']=='franchise_owner' ? 1 : NULL,
-        'franchise_id' => $UserData['franchise_id'],
-    ]); 
-        //  $UpdateUser = User::where('user_id', '=', $user_id)->first();
 
-        //  if($request->hasfile('image')){
-        //     $image = $request->file('image');
-        //     $filename = time(). '-'. $image->getClientOriginalName();
-        //     $image->storeAs('storage/app', $filename);
-        //     $UpdateUser->image = $filename;
-        //  }
-        //  $UpdateUser->save();
-    if($UserData){
-        return response()->json([
-            'success' => true,
-            'message' => 'User updated successfully.',
-            'data' => $UpdateUser
-        ],200);
-    }
-    else{
+    $status = $UserData['status'] === 'active' ? '1' : '0';
+    $is_franchise_owner = $UserData['is_franchise_owner'] === 'franchise_owner' ? '1' : '0';
+
+    $UpdateUser = User::where('user_id', $user_id)->first();
+
+    if (!$UpdateUser) {
         return response()->json([
             'success' => false,
-            'message' => 'Something went wrong',
+            'message' => 'User not found',
             'data' => []
-        ],401);
-
+        ], 404);
     }
-  }
 
+    // Check if a new image is uploaded
+    if ($request->hasFile('image')) {
+        // Delete the previous image
+        if ($UpdateUser->image) {
+            Storage::delete('public/images/' . $UpdateUser->image);
+        }
 
+        // Store the new image
+        $image = $request->file('image');
+        $filename = time() . '-' . $image->getClientOriginalName();
+        $image->storeAs('public/images', $filename); // Store image in storage/app/public/images
+        $UpdateUser->image = $filename;
+    }
+
+    // Update user data
+    $UpdateUser->name = $UserData['name'];
+    $UpdateUser->email = $UserData['email'];
+    $UpdateUser->status = $status;
+    $UpdateUser->role_id = $UserData['role_id'];
+    $UpdateUser->is_franchise_owner = $is_franchise_owner;
+    $UpdateUser->franchise_id = $UserData['franchise_id'];
+
+    $UpdateUser->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'User updated successfully.',
+        'data' => $UserData
+    ], 200);
+}
+/////////view user
+public function usersView($user_id){
+    $users = User::find($user_id);
+if($users){
+    return response()->json([
+        'success' => true,
+        'message' => 'view user',
+        'data'=> $users
+    ],200);
+}
+else{
+    return response()->json([
+        'success' => false,
+        'message' => 'Something went wrong.',
+    ],401);
+}
+}
 
 //   ///////////template base
  public function sendLink(Request $request)
